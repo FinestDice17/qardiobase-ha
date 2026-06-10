@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "QardioBase Scale Setup",
+        "description": "Select your QardioBase scale or enter its Bluetooth address manually. Found {found_devices} QardioBase device(s) via Bluetooth.\n\nTip: Step on the scale to wake it up before scanning.",
+        "data": {
+          "address": "Bluetooth Address"
+        }
+      },
+      "users": {
+        "title": "Configure Users",
+        "description": "Add users who will use this scale. Set weight ranges so the scale can auto-detect who is weighing in.\n\nCurrently configured: {current_users} ({user_count} user(s))",
+        "data": {
+          "user_name": "User Name",
+          "min_weight": "Minimum Weight (for auto-detection)",
+          "max_weight": "Maximum Weight (for auto-detection)",
+          "unit": "Weight Unit",
+          "add_another": "Add another user?"
+        }
+      }
+    },
+    "error": {
+      "no_address": "Please select or enter a Bluetooth address",
+      "no_users": "Please add at least one user"
+    },
+    "abort": {
+      "already_configured": "This QardioBase is already configured"
+    }
+  }
+}
