@@ -5,6 +5,7 @@ import logging
 from typing import Any, Callable
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
@@ -238,14 +239,14 @@ class QardioBaseCoordinator:
         if matched_user:
             self._assign_measurement(matched_user, measurement)
         elif len(self.users) == 1:
-            # Only one user configured — assign automatically
+            # Only one user configured -- assign automatically
             self._assign_measurement(self.users[0][CONF_USER_NAME], measurement)
         else:
-            # Can't determine user — store as pending and create a persistent notification
+            # Can't determine user -- store as pending and create a persistent notification
             self._pending_measurement = measurement
             self._create_user_selection_notification(measurement)
-
-        self.hass.loop.call_soon_threadsafe(self._notify_listeners)
+            # Only notify here when _assign_measurement is NOT called (no double-fire)
+            self.hass.loop.call_soon_threadsafe(self._notify_listeners)
 
     def _match_user(self, weight_kg: float, weight_lb: float) -> str | None:
         """Match a measurement to a user by weight range."""
@@ -320,7 +321,7 @@ class QardioBaseCoordinator:
         return self._last_user
 
 
-class QardioBaseScaleSensor(SensorEntity):
+class QardioBaseScaleSensor(RestoreSensor):
     """Sensor for scale-level data (battery, status, last user)."""
 
     _attr_has_entity_name = True
@@ -335,6 +336,7 @@ class QardioBaseScaleSensor(SensorEntity):
         self._coordinator = coordinator
         self._sensor_def = sensor_def
         self._address = address
+        self._restored_value: Any = None
 
         self._attr_unique_id = f"qardiobase_{address}_{sensor_def['key']}"
         self._attr_name = sensor_def["name"]
@@ -361,21 +363,39 @@ class QardioBaseScaleSensor(SensorEntity):
         """Return the sensor value."""
         key = self._sensor_def["key"]
         if key == "battery":
-            return self._coordinator.battery
+            live = self._coordinator.battery
         elif key == "status":
-            return self._coordinator.state
+            live = self._coordinator.state
         elif key == "last_user":
-            return self._coordinator.last_user
-        return None
+            live = self._coordinator.last_user
+        else:
+            live = None
+
+        if live is not None:
+            return live
+        return self._restored_value
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self.async_write_ha_state()
 
     async def async_added_to_hass(self) -> None:
-        """Register listener."""
+        """Restore last state and register listener."""
+        # Restore last known value before the listener is registered
+        last_sensor_data = await self.async_get_last_sensor_data()
+        if last_sensor_data is not None:
+            self._restored_value = last_sensor_data.native_value
+            _LOGGER.debug(
+                "Restored %s to %s", self._attr_unique_id, self._restored_value
+            )
+
         self.async_on_remove(
-            self._coordinator.add_listener(self.async_write_ha_state)
+            self._coordinator.add_listener(self._handle_coordinator_update)
         )
 
 
-class QardioBaseUserSensor(SensorEntity):
+class QardioBaseUserSensor(RestoreSensor):
     """Sensor for per-user measurement data."""
 
     _attr_has_entity_name = True
@@ -394,6 +414,7 @@ class QardioBaseUserSensor(SensorEntity):
         self._address = address
         self._user_name = user_name
         self._unit = unit
+        self._restored_value: Any = None
 
         slug = user_name.lower().replace(" ", "_")
         self._attr_unique_id = f"qardiobase_{address}_{slug}_{sensor_def['key']}"
@@ -430,7 +451,7 @@ class QardioBaseUserSensor(SensorEntity):
         """Return the sensor value."""
         measurement = self._coordinator.get_user_measurement(self._user_name)
         if not measurement:
-            return None
+            return self._restored_value
 
         key = self._sensor_def["key"]
         if key == "weight":
@@ -466,8 +487,21 @@ class QardioBaseUserSensor(SensorEntity):
                 attrs["raw_json"] = measurement.raw_json
         return attrs
 
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self.async_write_ha_state()
+
     async def async_added_to_hass(self) -> None:
-        """Register listener."""
+        """Restore last state and register listener."""
+        # Restore last known value before the listener is registered
+        last_sensor_data = await self.async_get_last_sensor_data()
+        if last_sensor_data is not None:
+            self._restored_value = last_sensor_data.native_value
+            _LOGGER.debug(
+                "Restored %s to %s", self._attr_unique_id, self._restored_value
+            )
+
         self.async_on_remove(
-            self._coordinator.add_listener(self.async_write_ha_state)
+            self._coordinator.add_listener(self._handle_coordinator_update)
         )
