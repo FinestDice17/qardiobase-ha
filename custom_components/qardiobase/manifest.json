@@ -8,7 +8,7 @@
   "dependencies": [
     "bluetooth_adapters"
   ],
-  "documentation": "https://github.com/blarocjr/qardiobase-ha",
+  "documentation": "https://github.com/FinestDice17/qardiobase-ha",
   "bluetooth": [
     {
       "local_name": "qardio*"
