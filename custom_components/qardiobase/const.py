@@ -30,14 +30,3 @@ CONF_USER_MIN_WEIGHT = "min_weight"
 CONF_USER_MAX_WEIGHT = "max_weight"
 CONF_USER_UNIT = "unit"
 CONF_ADDRESS = "address"
-
-# Measurement fields
-MEASUREMENT_FIELDS = {
-    "weight": {"name": "Weight", "unit_kg": "kg", "unit_lb": "lb", "icon": "mdi:scale-bathroom", "device_class": "weight"},
-    "bmi": {"name": "BMI", "unit_kg": "", "unit_lb": "", "icon": "mdi:human", "device_class": None},
-    "fat": {"name": "Body Fat", "unit_kg": "%", "unit_lb": "%", "icon": "mdi:percent", "device_class": None},
-    "tbw": {"name": "Body Water", "unit_kg": "%", "unit_lb": "%", "icon": "mdi:water-percent", "device_class": None},
-    "bmc": {"name": "Bone Mass", "unit_kg": "%", "unit_lb": "%", "icon": "mdi:bone", "device_class": None},
-    "sm": {"name": "Skeletal Muscle", "unit_kg": "%", "unit_lb": "%", "icon": "mdi:arm-flex", "device_class": None},
-    "mt": {"name": "Muscle Mass", "unit_kg": "%", "unit_lb": "%", "icon": "mdi:arm-flex-outline", "device_class": None},
-}

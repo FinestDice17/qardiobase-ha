@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from bleak import BleakClient, BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
@@ -20,6 +21,7 @@ from .const import (
     BATTERY_CHAR,
     RESULT_READY_MARKER,
     STATE_DONE,
+    STATE_IDLE,
     STATE_MEASURING,
     MIN_WEIGHT_KG,
     MAX_WEIGHT_KG,
@@ -76,6 +78,7 @@ class QardioBaseClient:
         self._on_state_change = on_state_change
 
         self._client: BleakClient | None = None
+        self._result_char: BleakGATTCharacteristic | None = None
         self._session_active = False
         self._did_finalize = False
         self._measuring = False
@@ -260,7 +263,7 @@ class QardioBaseClient:
                     self._loop.create_task, self._read_result()
                 )
 
-        elif state == 0x00:  # idle
+        elif state == STATE_IDLE:
             self._measuring = False
 
     def _on_measure_notify(self, sender: int, data: bytearray) -> None:
